@@ -57,7 +57,9 @@ def main():
 
     output = []
     for upc, quantity in lookup.items():
-        entry = OutputEntry(upc=upc, qty_input=quantity)
+        entry = OutputEntry()
+        entry.upc = str(upc)
+        entry.qty_input = quantity
 
         results = data[data["UPC"] == upc]
         if len(results) > 1:
@@ -67,11 +69,14 @@ def main():
             result = results.iloc[0]
             entry.qty_database = int(result["Qty On Hand"])
             entry.unit_cost = float(result["Unit Cost"])
+            entry.stock_code = result["Stock Code"]
             entry.name = result["Name"]
+            entry.category = result["Category Name"]
+            entry.category_group = result["Category Group Name"]
 
-        entry.variance = entry.qty_input - entry.qty_database
-        entry.total_dollar_variance = round(entry.variance * entry.unit_cost, 2)
-        output.append(entry)
+        entry.unit_variance = entry.qty_input - entry.qty_database
+        entry.dollar_variance = round(entry.unit_variance * entry.unit_cost, 2)
+        output.append(entry.model_dump(by_alias=True))
 
     save_output(data=output)
 
