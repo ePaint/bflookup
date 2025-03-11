@@ -14,6 +14,7 @@ class OutputEntry(BaseModel):
     category_group: Optional[str] = Field(default="", alias="Category Group")
     unit_variance: Optional[int] = Field(default=0, alias="Unit Variance")
     dollar_variance: Optional[float] = Field(default=0, alias="Dollar Variance", description="Currency")
+    found: Optional[bool] = Field(default=False, alias="Found")
 
     @staticmethod
     def get_currency_fields() -> list[str]:

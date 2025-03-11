@@ -63,8 +63,13 @@ def save_output(data: list[OutputEntry]):
 
     for column in OutputEntry.get_currency_fields():
         output_df[column] = output_df[column].apply(format_currency)
-    output_df["UPC"] = "'" + output_df["UPC"].astype(str)
-    output_df["Stock Code"] = "'" + output_df["Stock Code"].astype(str)
+
+    if SETTINGS.FORCE_UPC_EXCEL_STRING:
+        output_df["UPC"] = "'" + output_df["UPC"].astype(str)
+        output_df["Stock Code"] = "'" + output_df["Stock Code"].astype(str)
+
+    output_df = output_df.sort_values(by=["Found"], ascending=False)
+
     output_df.to_csv(filename, index=False)
 
 
@@ -78,26 +83,27 @@ def main():
 
     output = []
     for upc, quantity in lookup.items():
+        entry = OutputEntry()
+        entry.upc = str(upc)
+        entry.qty_input = quantity
+
         results = lookup_upc(upc=upc, data=data)
         if len(results) > 1:
             raise ValueError(f"Multiple results found for UPC: {upc}")
 
-        if results.empty:
-            continue
+        if not results.empty:
+            result = results.iloc[0]
+            entry.found = True
+            entry.qty_database = int(float(result["Total Qty On Hand"]))
+            entry.unit_cost = float(result["Latest Cost"])
+            entry.stock_code = result["Stock Code"]
+            entry.name = result["Name"]
+            entry.category = result["Category Name"]
+            entry.category_group = result["Category Group Name"]
 
-        entry = OutputEntry()
-        entry.upc = str(upc)
-        entry.qty_input = quantity
-        result = results.iloc[0]
-        entry.qty_database = int(float(result["Total Qty On Hand"]))
-        entry.unit_cost = float(result["Latest Cost"])
-        entry.stock_code = result["Stock Code"]
-        entry.name = result["Name"]
-        entry.category = result["Category Name"]
-        entry.category_group = result["Category Group Name"]
+            entry.unit_variance = entry.qty_input - entry.qty_database
+            entry.dollar_variance = round(entry.unit_variance * entry.unit_cost, 2)
 
-        entry.unit_variance = entry.qty_input - entry.qty_database
-        entry.dollar_variance = round(entry.unit_variance * entry.unit_cost, 2)
         output.append(entry.model_dump(by_alias=True))
 
     save_output(data=output)

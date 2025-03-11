@@ -12,6 +12,7 @@ class Settings(BaseModel):
     DATA_FOLDER: Optional[str] = "data"
     LOOKUP_FOLDER: Optional[str] = "lookup"
     OUTPUT_FOLDER: Optional[str] = "output"
+    FORCE_UPC_EXCEL_STRING: Optional[bool] = False
     TIMESTAMP: Optional[str] = ""
 
 
