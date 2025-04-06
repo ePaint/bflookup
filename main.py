@@ -26,7 +26,11 @@ def read_first_file_in_folder(
     files = [file for file in files if file != "processed"]
     if not files:
         raise FileNotFoundError("No files found in data folder")
-    dataframe = pandas.read_csv(f"{folder_name}/{files[0]}", keep_default_na=False)
+    fullname = f'"{folder_name}/{files[0]}"'
+    if not os.path.exists(fullname):
+        raise FileNotFoundError(f"File not found: {fullname}")
+    print(f"Reading file: {fullname}")
+    dataframe = pandas.read_csv(fullname, keep_default_na=False)
     mark_as_processed(folder_name=folder_name, file_name=files[0])
     return dataframe
 
