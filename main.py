@@ -26,7 +26,7 @@ def read_first_file_in_folder(
     files = [file for file in files if file != "processed"]
     if not files:
         raise FileNotFoundError("No files found in data folder")
-    fullname = f'"{folder_name}/{files[0]}"'
+    fullname = f'{folder_name}/{files[0]}'
     if not os.path.exists(fullname):
         raise FileNotFoundError(f"File not found: {fullname}")
     print(f"Reading file: {fullname}")
