@@ -39,7 +39,7 @@ def read_data():
     data = read_first_file_in_folder(folder_name=SETTINGS.DATA_FOLDER)
     data = data.assign(UPC=data["UPC"].str.split(",")).explode("UPC")
     data["UPC"] = pandas.to_numeric(data["UPC"], errors="coerce")
-    data["UPC"] = data["UPC"].round().astype(int)
+    data["UPC"] = data["UPC"].round()
     data = data.drop_duplicates(subset=["ID", "UPC"]).reset_index(drop=True)
     return data
 
