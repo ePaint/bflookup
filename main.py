@@ -38,6 +38,7 @@ def read_first_file_in_folder(
 def read_data():
     data = read_first_file_in_folder(folder_name=SETTINGS.DATA_FOLDER)
     data = data.assign(UPC=data["UPC"].str.split(",")).explode("UPC")
+    data["UPC"] = data["UPC"].str.replace(" ", "")
     data["UPC"] = pandas.to_numeric(data["UPC"], errors="coerce")
     data["UPC"] = data["UPC"].round()
     data = data.drop_duplicates(subset=["ID", "UPC"]).reset_index(drop=True)
@@ -77,8 +78,19 @@ def save_output(data: list[OutputEntry]):
     output_df.to_csv(filename, index=False)
 
 
-def lookup_upc(upc: str, data: pandas.DataFrame, column: str = "UPC") -> pandas.DataFrame:
-    return data[data[column] == upc]
+def lookup_upc(upc: str, data: pandas.DataFrame, column: str = "UPC") -> (pandas.DataFrame, str):
+    cmp_upc = upc
+    result = data[data[column].astype(str).str.contains(cmp_upc)]
+    if result.empty:
+        cmp_upc = upc[1:]
+        result = data[data[column].astype(str).str.contains(cmp_upc)]
+    if result.empty:
+        cmp_upc = upc[:-1]
+        result = data[data[column].astype(str).str.contains(cmp_upc)]
+    if result.empty:
+        cmp_upc = upc[1:-1]
+        result = data[data[column].astype(str).str.contains(cmp_upc)]
+    return result, cmp_upc
 
 
 def main():
@@ -90,10 +102,11 @@ def main():
         entry = OutputEntry()
         entry.upc = str(upc)
         entry.qty_input = quantity
-
-        results = lookup_upc(upc=upc, data=data)
+        results, match_upc = lookup_upc(upc=str(upc), data=data)
         if len(results) > 1:
-            raise ValueError(f"Multiple results found for UPC: {upc}")
+            raise ValueError(f"Multiple results found for UPC: {upc}"
+                             f"\nMatch UPC substring case: {match_upc}"
+                             f"\nConflicting item names: {results["Name"].tolist()}")
 
         if not results.empty:
             result = results.iloc[0]
