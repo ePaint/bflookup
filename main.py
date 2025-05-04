@@ -72,6 +72,7 @@ def save_output(data: list[OutputEntry]):
     if SETTINGS.FORCE_UPC_EXCEL_STRING:
         output_df["UPC"] = "'" + output_df["UPC"].astype(str)
         output_df["Stock Code"] = "'" + output_df["Stock Code"].astype(str)
+        output_df["Match UPC"] = "'" + output_df["Match UPC"].astype(str)
 
     output_df = output_df.sort_values(by=["Found"], ascending=False)
 
@@ -111,6 +112,7 @@ def main():
         if not results.empty:
             result = results.iloc[0]
             entry.found = True
+            entry.match_upc = match_upc
             entry.qty_database = int(float(result["Total Qty On Hand"]))
             entry.unit_cost = float(result["Latest Cost"])
             entry.stock_code = result["Stock Code"]
