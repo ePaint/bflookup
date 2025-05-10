@@ -1,9 +1,13 @@
 import os
+import warnings
 
 import pandas
+from pandas.errors import SettingWithCopyWarning
 
 from src.OutputEntry import OutputEntry
 from src.settings import SETTINGS
+
+warnings.simplefilter(action="ignore", category=SettingWithCopyWarning)
 
 
 def mark_as_processed(
@@ -54,9 +58,8 @@ def read_lookup() -> dict[str, int]:
     return output
 
 
-def save_output(data: list[OutputEntry]):
-    output_df = pandas.DataFrame(data)
-    filename = f"{SETTINGS.OUTPUT_FOLDER}/{SETTINGS.TIMESTAMP}_output.csv"
+def save_dataframe(dataframe: pandas.DataFrame, suffix: str = "output") -> None:
+    filename = f"{SETTINGS.OUTPUT_FOLDER}/{SETTINGS.TIMESTAMP}_{suffix}.csv"
 
     def format_currency(value):
         if value > 0:
@@ -67,16 +70,17 @@ def save_output(data: list[OutputEntry]):
             return "$-"
 
     for column in OutputEntry.get_currency_fields():
-        output_df[column] = output_df[column].apply(format_currency)
+        dataframe[column] = dataframe[column].apply(format_currency)
 
     if SETTINGS.FORCE_UPC_EXCEL_STRING:
-        output_df["UPC"] = "'" + output_df["UPC"].astype(str)
-        output_df["Stock Code"] = "'" + output_df["Stock Code"].astype(str)
-        output_df["Match UPC"] = "'" + output_df["Match UPC"].astype(str)
+        if "UPC" in dataframe.columns:
+            dataframe["UPC"] = "'" + dataframe["UPC"].astype(str)
+        if "Stock Code" in dataframe.columns:
+            dataframe["Stock Code"] = "'" + dataframe["Stock Code"].astype(str)
+        if "Match UPC" in dataframe.columns:
+            dataframe["Match UPC"] = "'" + dataframe["Match UPC"].astype(str)
 
-    output_df = output_df.sort_values(by=["Found"], ascending=False)
-
-    output_df.to_csv(filename, index=False)
+    dataframe.to_csv(filename, index=False)
 
 
 def lookup_upc(upc: str, data: pandas.DataFrame, column: str = "UPC") -> (pandas.DataFrame, str):
@@ -125,7 +129,13 @@ def main():
 
         output.append(entry.model_dump(by_alias=True))
 
-    save_output(data=output)
+    output_dataframe = pandas.DataFrame(output)
+    output_dataframe = output_dataframe.sort_values(by=["Found"], ascending=False)
+
+    errors_dataframe = output_dataframe[output_dataframe["Found"] == False]
+
+    save_dataframe(dataframe=output_dataframe)
+    save_dataframe(dataframe=errors_dataframe, suffix="errors")
 
 
 if __name__ == "__main__":
