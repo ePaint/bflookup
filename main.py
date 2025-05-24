@@ -109,9 +109,9 @@ def main():
         entry.qty_input = quantity
         results, match_upc = lookup_upc(upc=str(upc), data=data)
         if len(results) > 1:
-            raise ValueError(f"Multiple results found for UPC: {upc}"
-                             f"\nMatch UPC substring case: {match_upc}"
-                             f"\nConflicting item names: {results["Name"].tolist()}")
+            entry.error = (f"Multiple results found for UPC: '{upc}'. "
+                           f"Match UPC substring case: '{match_upc}'. "
+                           f"Conflicting item names: {results['Name'].tolist()}")
 
         if not results.empty:
             result = results.iloc[0]

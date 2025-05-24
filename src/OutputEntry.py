@@ -16,6 +16,7 @@ class OutputEntry(BaseModel):
     dollar_variance: Optional[float] = Field(default=0, alias="Dollar Variance", description="Currency")
     found: Optional[bool] = Field(default=False, alias="Found")
     match_upc: Optional[str] = Field(default="", alias="Match UPC")
+    error: Optional[str] = Field(default="", alias="Error")
 
     @staticmethod
     def get_currency_fields() -> list[str]:
