@@ -46,6 +46,13 @@ def read_data():
     data["UPC"] = pandas.to_numeric(data["UPC"], errors="coerce")
     data["UPC"] = data["UPC"].round()
     data = data.drop_duplicates(subset=["ID", "UPC"]).reset_index(drop=True)
+
+    data = data.assign(StockCode=data["Stock Code"].str.split(",")).explode("StockCode")
+    data["StockCode"] = data["StockCode"].str.replace(" ", "")
+    data["StockCode"] = pandas.to_numeric(data["StockCode"], errors="coerce")
+    data["StockCode"] = data["StockCode"].round()
+    data = data.drop_duplicates(subset=["ID", "StockCode"]).reset_index(drop=True)
+
     return data
 
 
@@ -83,19 +90,22 @@ def save_dataframe(dataframe: pandas.DataFrame, suffix: str = "output") -> None:
     dataframe.to_csv(filename, index=False)
 
 
-def lookup_upc(upc: str, data: pandas.DataFrame, column: str = "UPC") -> (pandas.DataFrame, str):
-    cmp_upc = upc
-    result = data[data[column].astype(str).str.contains(cmp_upc)]
-    if result.empty:
-        cmp_upc = upc[1:]
+def lookup_upc(upc: str, data: pandas.DataFrame, columns: list[str]) -> (pandas.DataFrame, str):
+    for column in columns:
+        cmp_upc = upc
         result = data[data[column].astype(str).str.contains(cmp_upc)]
-    if result.empty:
-        cmp_upc = upc[:-1]
-        result = data[data[column].astype(str).str.contains(cmp_upc)]
-    if result.empty:
-        cmp_upc = upc[1:-1]
-        result = data[data[column].astype(str).str.contains(cmp_upc)]
-    return result, cmp_upc
+        if result.empty:
+            cmp_upc = upc[1:]
+            result = data[data[column].astype(str).str.contains(cmp_upc)]
+        if result.empty:
+            cmp_upc = upc[:-1]
+            result = data[data[column].astype(str).str.contains(cmp_upc)]
+        if result.empty:
+            cmp_upc = upc[1:-1]
+            result = data[data[column].astype(str).str.contains(cmp_upc)]
+        if not result.empty:
+            return result, cmp_upc
+    return pandas.DataFrame(), upc
 
 
 def main():
@@ -107,7 +117,7 @@ def main():
         entry = OutputEntry()
         entry.upc = str(upc)
         entry.qty_input = quantity
-        results, match_upc = lookup_upc(upc=str(upc), data=data)
+        results, match_upc = lookup_upc(upc=str(upc), data=data, columns=["UPC", "StockCode"])
         if len(results) > 1:
             entry.error = (f"Multiple results found for UPC: '{upc}'. "
                            f"Match UPC substring case: '{match_upc}'. "
