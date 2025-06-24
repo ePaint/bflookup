@@ -41,6 +41,7 @@ def read_first_file_in_folder(
 
 def read_data():
     data = read_first_file_in_folder(folder_name=SETTINGS.DATA_FOLDER)
+
     data = data.assign(UPC=data["UPC"].str.split(",")).explode("UPC")
     data["UPC"] = data["UPC"].str.replace(" ", "")
     data["UPC"] = pandas.to_numeric(data["UPC"], errors="coerce")
@@ -118,6 +119,8 @@ def main():
         entry.upc = str(upc)
         entry.qty_input = quantity
         results, match_upc = lookup_upc(upc=str(upc), data=data, columns=["UPC", "StockCode"])
+        # merge results by ID, get first of every field
+        results = results.groupby("ID").first()
         if len(results) > 1:
             entry.error = (f"Multiple results found for UPC: '{upc}'. "
                            f"Match UPC substring case: '{match_upc}'. "
